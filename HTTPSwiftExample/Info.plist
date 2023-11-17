@@ -27,6 +27,10 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Audio data is used to provide to an AI for transcription</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Audio data is transcribed into text for training and inferencing from an AI</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
