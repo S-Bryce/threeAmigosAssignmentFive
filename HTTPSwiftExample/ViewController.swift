@@ -193,7 +193,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     }
     
     //MARK: Comm with Server
-    func sendFeatures(_ array:[String], withLabel label:String){
+    func sendFeatures(_ array:[String], withLabel label:String, modelType: String){
         let baseURL = "\(SERVER_URL)/AddDataPoint"
         let postUrl = URL(string: "\(baseURL)")
         
@@ -203,7 +203,8 @@ class ViewController: UIViewController, URLSessionDelegate {
         // data to send in body of post request (send arguments as json)
         let jsonUpload:NSDictionary = ["feature":array,
                                        "label":"\(label)",
-                                       "dsid":self.dsid]
+                                       "dsid":self.dsid,
+                                       "model_type": modelType] // specifies model type
         
         
         let requestBody:Data? = self.convertDictionaryToData(with:jsonUpload)
@@ -230,7 +231,7 @@ class ViewController: UIViewController, URLSessionDelegate {
         postTask.resume() // start the task
     }
     
-    func getPrediction(_ array:[String]){
+    func getPrediction(_ array:[String], modelType: String){
         let baseURL = "\(SERVER_URL)/PredictOne"
         let postUrl = URL(string: "\(baseURL)")
         
@@ -238,7 +239,7 @@ class ViewController: UIViewController, URLSessionDelegate {
         var request = URLRequest(url: postUrl!)
         
         // data to send in body of post request (send arguments as json)
-        let jsonUpload:NSDictionary = ["feature":array, "dsid":self.dsid]
+        let jsonUpload:NSDictionary = ["feature":array, "dsid":self.dsid, "model_type": modelType] // sets model type
         
         
         let requestBody:Data? = self.convertDictionaryToData(with:jsonUpload)
