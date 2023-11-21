@@ -16,7 +16,7 @@
 // to see what your public facing IP address is, the ip address can be used here
 
 // CHANGE THIS TO THE URL FOR YOUR LAPTOP
-let SERVER_URL = "http://10.9.130.20:8000" // change this for your server name!!!
+let SERVER_URL = "http://47.189.164.232:8000" // change this for your server name!!!
 
 import UIKit
 import CoreMotion
@@ -47,11 +47,12 @@ class ViewController: UIViewController, URLSessionDelegate {
     var magValue = 0.1
     var isCalibrating = false
     
+    var modelType = "Logistic Classifier"
+    
     var isWaitingForMotionData = false
     
     var speechToText = SpeechRecognizer()
     
-    @IBOutlet weak var dsidLabel: UILabel!
     @IBOutlet weak var largeMotionMagnitude: UIProgressView!
     @IBOutlet weak var transcriptLabel: UILabel!
     
@@ -62,11 +63,12 @@ class ViewController: UIViewController, URLSessionDelegate {
     
     @IBAction func InferenceReleased(_ sender: Any) {
         self.speechToText.stopTranscribing()
-        self.getPrediction(self.speechToText.transcript.components(separatedBy: " "))
+        self.getPrediction(self.speechToText.transcript.components(separatedBy: " "), modelType: self.modelType)
         self.transcriptLabel.text = self.speechToText.transcript
         self.speechToText.resetTranscript()
     }
     
+
     
     @IBAction func TimerPressed(_ sender: Any) {
         self.speechToText.startTranscribing()
@@ -75,7 +77,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     
     @IBAction func TimerReleased(_ sender: Any) {
         self.speechToText.stopTranscribing()
-        self.sendFeatures(self.speechToText.transcript.components(separatedBy: " "), withLabel: "timer")
+        self.sendFeatures(self.speechToText.transcript.components(separatedBy: " "), withLabel: "timer", modelType: self.modelType)
         self.transcriptLabel.text = self.speechToText.transcript
         self.speechToText.resetTranscript()
     }
@@ -88,7 +90,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     
     @IBAction func ReminderReleased(_ sender: Any) {
         self.speechToText.stopTranscribing()
-        self.sendFeatures(self.speechToText.transcript.components(separatedBy: " "), withLabel: "reminder")
+        self.sendFeatures(self.speechToText.transcript.components(separatedBy: " "), withLabel: "reminder", modelType: self.modelType)
         self.transcriptLabel.text = self.speechToText.transcript
         self.speechToText.resetTranscript()
         
@@ -102,9 +104,25 @@ class ViewController: UIViewController, URLSessionDelegate {
     
     @IBAction func NotesReleased(_ sender: Any) {
         self.speechToText.stopTranscribing()
-        self.sendFeatures(self.speechToText.transcript.components(separatedBy: " "), withLabel: "notes")
+        self.sendFeatures(self.speechToText.transcript.components(separatedBy: " "), withLabel: "notes", modelType: self.modelType)
         self.transcriptLabel.text = self.speechToText.transcript
         self.speechToText.resetTranscript()
+    }
+    
+    
+    @IBOutlet weak var modelButton: UISwitch!
+    
+    @IBOutlet weak var modelLabel: UILabel!
+    
+    @IBAction func ChangeModelType(_ sender: Any) {
+        if self.modelButton.isOn {
+            self.modelType = "Logistic Classifier"
+            self.modelLabel.text = "Model Type: \(self.modelType)"
+        }
+        else {
+            self.modelType = "KNN Classifier"
+        }
+        self.modelLabel.text = "Model Type: \(self.modelType)"
     }
     
     
@@ -117,15 +135,7 @@ class ViewController: UIViewController, URLSessionDelegate {
         case left
     }
     
-    var dsid:Int = 0 {
-        didSet{
-            DispatchQueue.main.async{
-                // update label when set
-                self.dsidLabel.layer.add(self.animation, forKey: nil)
-                self.dsidLabel.text = "Current DSID: \(self.dsid)"
-            }
-        }
-    }
+    var dsid:Int = 0
     
     @IBAction func magnitudeChanged(_ sender: UISlider) {
         self.magValue = Double(sender.value)
@@ -152,7 +162,7 @@ class ViewController: UIViewController, URLSessionDelegate {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        
+        self.modelLabel.text = "Model Type: \(self.modelType)"
         // create reusable animation
         animation.timingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut)
         animation.type = CATransitionType.fade
@@ -168,7 +178,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     //MARK: Get New Dataset ID
     @IBAction func getDataSetId(_ sender: AnyObject) {
         // create a GET request for a new DSID from server
-        let baseURL = "\(SERVER_URL)/GetNewDatasetId"
+        let baseURL = "\(SERVER_URL)/GetNewDatasetIdMotor"
         
         let getUrl = URL(string: baseURL)
         let request: URLRequest = URLRequest(url: getUrl!)
@@ -194,7 +204,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     
     //MARK: Comm with Server
     func sendFeatures(_ array:[String], withLabel label:String, modelType: String){
-        let baseURL = "\(SERVER_URL)/AddDataPoint"
+        let baseURL = "\(SERVER_URL)/AddDataPointMotor"
         let postUrl = URL(string: "\(baseURL)")
         
         // create a custom HTTP POST request
@@ -204,7 +214,7 @@ class ViewController: UIViewController, URLSessionDelegate {
         let jsonUpload:NSDictionary = ["feature":array,
                                        "label":"\(label)",
                                        "dsid":self.dsid,
-                                       "model_type": modelType] // specifies model type
+                                       "model_type": modelType] // specifies model type (mod B)
         
         
         let requestBody:Data? = self.convertDictionaryToData(with:jsonUpload)
@@ -232,14 +242,14 @@ class ViewController: UIViewController, URLSessionDelegate {
     }
     
     func getPrediction(_ array:[String], modelType: String){
-        let baseURL = "\(SERVER_URL)/PredictOne"
+        let baseURL = "\(SERVER_URL)/PredictOneMotor"
         let postUrl = URL(string: "\(baseURL)")
         
         // create a custom HTTP POST request
         var request = URLRequest(url: postUrl!)
         
         // data to send in body of post request (send arguments as json)
-        let jsonUpload:NSDictionary = ["feature":array, "dsid":self.dsid, "model_type": modelType] // sets model type
+        let jsonUpload:NSDictionary = ["feature":array, "dsid":self.dsid, "model_type": modelType] // sets model type (mod B)
         
         
         let requestBody:Data? = self.convertDictionaryToData(with:jsonUpload)
@@ -257,7 +267,7 @@ class ViewController: UIViewController, URLSessionDelegate {
                         }
                         else{ // no error we are aware of
                             let jsonDictionary = self.convertDataToDictionary(with: data)
-                            
+                            print("Response:\n",response)
                             let labelResponse = jsonDictionary["prediction"]!
                             print(labelResponse)
                             // TODO: UI Element for predicted class
@@ -271,7 +281,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     @IBAction func makeModel(_ sender: AnyObject) {
         
         // create a GET request for server to update the ML model with current data
-        let baseURL = "\(SERVER_URL)/UpdateModel"
+        let baseURL = "\(SERVER_URL)/UpdateModelMotor"
         let query = "?dsid=\(self.dsid)"
         
         let getUrl = URL(string: baseURL+query)
